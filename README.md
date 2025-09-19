@@ -13,6 +13,16 @@ Reditor is a modern, rich text editor that mimics the functionality and user exp
 - Modern and intuitive user interface
 - Built with React and Tiptap
 
+## Tech Stack
+
+- React 18
+- TypeScript
+- Vite
+- Tiptap (coming soon)
+
 ## Getting Started
 
-Coming soon...
+```bash
+npm install
+npm run dev
+```
