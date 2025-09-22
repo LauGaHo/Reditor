@@ -40,3 +40,19 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Block 组件样式 */
+div[contenteditable] {
+  transition: border-color 0.2s ease;
+}
+
+div[contenteditable]:focus {
+  border-color: #646cff !important;
+  box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.1);
+}
+
+div[contenteditable]:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
