@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Block } from "./Block";
 import type { BlockData } from "../types/block";
 import { createBlock } from "../types/block";
@@ -14,6 +14,9 @@ const MultiBlockEditorComponent = ({
 }: MultiBlockEditorProps) => {
   // 使用数组管理多个块
   const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks);
+
+  // 存储每个块的 DOM ref
+  const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // 通知父组件块变化 - 避免在渲染过程中调用
   useEffect(() => {
@@ -52,6 +55,14 @@ const MultiBlockEditorComponent = ({
         ...prevBlocks.slice(blockIndex + 1),
       ];
 
+      // 使用 setTimeout 确保新块渲染完成后再设置焦点
+      setTimeout(() => {
+        const newBlockElement = blockRefs.current.get(newBlock.id);
+        if (newBlockElement) {
+          newBlockElement.focus();
+        }
+      }, 0);
+
       return newBlocks;
     });
   }, []);
@@ -70,12 +81,30 @@ const MultiBlockEditorComponent = ({
     });
   }, []);
 
+  // 为每个 block 创建稳定的 ref 回调函数
+  const blockRefCallbacks = useMemo(() => {
+    const callbacks = new Map<string, (element: HTMLDivElement | null) => void>();
+
+    blocks.forEach(block => {
+      callbacks.set(block.id, (element) => {
+        if (element) {
+          blockRefs.current.set(block.id, element);
+        } else {
+          blockRefs.current.delete(block.id);
+        }
+      });
+    });
+
+    return callbacks;
+  }, [blocks]);
+
   return (
     <div className="multi-block-editor">
       {/* React 列表渲染：直接使用 blocks */}
       {blocks.map((block, index) => (
         <Block
           key={block.id} // 重要：使用唯一的 key
+          ref={blockRefCallbacks.get(block.id)!}
           block={block} // 对象引用稳定的 block
           placeholder={index === 0 ? "开始输入..." : "继续输入..."}
           onContentChange={handleContentChange}
@@ -104,4 +133,3 @@ const MultiBlockEditorComponent = ({
 };
 
 export const MultiBlockEditor = MultiBlockEditorComponent;
-

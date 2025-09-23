@@ -29,6 +29,11 @@
 - **核心学习：** 函数引用稳定性，依赖数组的作用
 - **解决方案：** 使用 useCallback 稳定函数引用
 
+### [06. useMemo Hook](./06_useMemo.md)
+- **主要问题：** ref 回调函数每次渲染都创建新引用，破坏 memo 优化
+- **核心学习：** 计算值缓存，与 useCallback 的区别，引用稳定性
+- **解决方案：** 使用 useMemo 创建稳定的函数引用 Map
+
 ## 核心问题回顾
 
 ### 问题链条：contentEditable + React 状态管理
@@ -50,6 +55,10 @@ return <div contentEditable dangerouslySetInnerHTML={{__html: initialContent}} /
 // 第三版：添加性能优化
 const handleInput = useCallback(() => { ... }, []);
 export default memo(Block);
+
+// 第四版：完善引用稳定性
+const blockRefCallbacks = useMemo(() => createStableRefs(), [blocks]);
+<Block ref={blockRefCallbacks.get(block.id)} />;
 ```
 
 ## 设计原则总结
@@ -70,6 +79,7 @@ export default memo(Block);
 ### 组件优化策略
 - React.memo 浅比较：对象引用 vs 内容比较
 - useCallback/useMemo 缓存：函数引用稳定性
+- useMemo vs useCallback：缓存返回值 vs 缓存函数本身
 - 引用稳定性的层次：对象引用稳定 vs 数组引用变化
 - 直接修改属性 vs 创建新对象的性能差异
 
@@ -86,9 +96,9 @@ export default memo(Block);
 
 ## 下一步学习方向
 
-- useMemo（计算值缓存）
 - useContext（状态提升和共享）
 - 自定义 Hook（逻辑复用）
 - useLayoutEffect（同步 DOM 操作）
+- useReducer（复杂状态管理）
 
 这些文档记录了真实开发中遇到的问题和思考过程，比单纯的 API 文档更有学习价值。
