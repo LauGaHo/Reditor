@@ -11,8 +11,8 @@ useEffect(() => {
   // 副作用逻辑
   return () => {
     // 清理函数（可选）
-  }
-}, [dependencies]) // 依赖数组
+  };
+}, [dependencies]); // 依赖数组
 ```
 
 ## 在项目中的使用案例
@@ -38,6 +38,7 @@ const handleInput = (event) => {
 **为什么使用：** 希望在内容状态变化时自动通知父组件。
 
 **遇到的问题：**
+
 1. **额外的渲染周期** - 输入 → 状态更新 → useEffect 执行 → 可能再次更新
 2. **依赖数组复杂性** - `onContentChange` 函数引用不稳定导致额外执行
 3. **性能损耗** - 每次输入都要经过完整的 React 更新周期
@@ -60,15 +61,15 @@ const handleInput = (event) => {
 
 ```tsx
 useEffect(() => {
-  console.log('组件渲染完成后执行');
+  console.log("组件渲染完成后执行");
 }, []); // 只在首次渲染后执行
 
 useEffect(() => {
-  console.log('每次渲染后都执行');
+  console.log("每次渲染后都执行");
 }); // 没有依赖数组
 
 useEffect(() => {
-  console.log('content 变化后执行');
+  console.log("content 变化后执行");
 }, [content]); // content 变化时执行
 ```
 
@@ -92,7 +93,9 @@ useEffect(() => {
 
 ```tsx
 // MultiBlockEditor.tsx - 解决渲染时调用 setState 的问题
-const MultiBlockEditorComponent = ({ onBlocksChange }: MultiBlockEditorProps) => {
+const MultiBlockEditorComponent = ({
+  onBlocksChange,
+}: MultiBlockEditorProps) => {
   const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks);
 
   // ✅ 使用 useEffect 异步通知父组件，避免渲染时更新状态
@@ -103,25 +106,24 @@ const MultiBlockEditorComponent = ({ onBlocksChange }: MultiBlockEditorProps) =>
     }
   }, [blocks, onBlocksChange]);
 
-  const handleContentChange = useCallback((blockId: string, content: string) => {
-    setBlocks((prevBlocks) => {
-      const newBlocks = prevBlocks.map((block) => {
-        if (block.id === blockId) {
-          if (block.content === content) {
-            return block; // 内容没变，保持引用
+  const handleContentChange = useCallback(
+    (blockId: string, content: string) => {
+      setBlocks((prevBlocks) => {
+        const newBlocks = prevBlocks.map((block) => {
+          if (block.id === blockId) {
+            block.content = content; // 直接修改，保持对象引用
           }
-          block.content = content; // 直接修改，保持对象引用
           return block;
-        }
-        return block;
+        });
+
+        // ❌ 不能在这里调用 onBlocksChange(newBlocks)
+        // 这会导致 "Cannot update component while rendering" 错误
+
+        return newBlocks;
       });
-
-      // ❌ 不能在这里调用 onBlocksChange(newBlocks)
-      // 这会导致 "Cannot update component while rendering" 错误
-
-      return newBlocks;
-    });
-  }, []);
+    },
+    [],
+  );
 };
 ```
 
@@ -137,10 +139,10 @@ const MultiBlockEditorComponent = ({ onBlocksChange }: MultiBlockEditorProps) =>
 
 ```tsx
 function Component() {
-  const [usedState, setUsedState] = useState('used');
-  const [unusedState, setUnusedState] = useState('unused');
+  const [usedState, setUsedState] = useState("used");
+  const [unusedState, setUnusedState] = useState("unused");
 
-  console.log('🔄 组件重新渲染！'); // 任何 setState 都会触发这里
+  console.log("🔄 组件重新渲染！"); // 任何 setState 都会触发这里
 
   return <div>{usedState}</div>; // 只使用了 usedState
 }
@@ -149,6 +151,7 @@ function Component() {
 ```
 
 **重要概念：**
+
 - React 不会分析 JSX 中哪些状态被使用
 - 只要调用了 `setState`，组件就会重新渲染
 - 这是 React 保持简单和可预测的设计哲学
@@ -180,6 +183,7 @@ useEffect(() => {
 ```
 
 **优化策略的层次：**
+
 1. **保持块对象引用稳定** → React.memo 工作，防止子组件重新渲染
 2. **让数组引用变化** → useEffect 能检测到变化，正确通知父组件
 3. **函数引用稳定** → useCallback 防止不必要的依赖更新
@@ -192,3 +196,4 @@ useEffect(() => {
 - 使用 useEffect 解决渲染时状态更新的问题
 - 区分对象引用稳定性和数组引用稳定性的不同作用
 - 考虑是否真的需要 useEffect，有时直接处理更简单
+
