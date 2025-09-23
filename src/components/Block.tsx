@@ -1,32 +1,55 @@
 import { memo } from "react";
+import type { BlockData } from "../types/block";
 
 interface BlockProps {
-  initialContent?: string;
+  block: BlockData; // 块数据
   placeholder?: string;
-  onContentChange?: (content: string) => void;
+  onContentChange?: (blockId: string, content: string) => void; // 传递块ID
+  onEnterPress?: (blockId: string) => void; // 回车创建新块
+  onDeleteBlock?: (blockId: string) => void; // 删除块
 }
 
 const BlockComponent = ({
-  initialContent = "",
+  block,
   placeholder = "输入文本...",
   onContentChange,
+  onEnterPress,
+  onDeleteBlock,
 }: BlockProps) => {
+  // 调试：记录每次渲染和 props 变化
+  console.log(
+    `🔄 Block ${block.id.slice(-6)} 重新渲染`,
+    {
+      content: `"${block.content.slice(0, 20)}"`,
+      placeholder,
+    }
+  );
+
   // 事件处理函数：处理用户输入
   const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
     const newContent = event.currentTarget.textContent || "";
 
-    // 直接通知父组件，不触发任何重新渲染
+    // 通知父组件，传递块ID和内容
     if (onContentChange) {
-      onContentChange(newContent);
+      onContentChange(block.id, newContent);
     }
   };
 
-  // 处理回车键创建新块（暂时只是阻止默认行为）
+  // 处理键盘事件
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
-      // 阶段2会实现：创建新块的逻辑
-      console.log("Enter pressed - 将在阶段2实现新块创建");
+      // 通知父组件创建新块
+      if (onEnterPress) {
+        onEnterPress(block.id);
+      }
+    } else if (event.key === "Backspace") {
+      const content = event.currentTarget.textContent || "";
+      // 如果块为空且按下退格键，删除该块
+      if (content === "" && onDeleteBlock) {
+        event.preventDefault();
+        onDeleteBlock(block.id);
+      }
     }
   };
 
@@ -48,10 +71,10 @@ const BlockComponent = ({
         marginBottom: "8px",
       }}
       data-placeholder={placeholder}
-      dangerouslySetInnerHTML={{ __html: initialContent }}
+      dangerouslySetInnerHTML={{ __html: block.content }}
     />
   );
 };
 
-// 使用 memo 优化：只有 props 真正变化时才重新渲染
+// 使用默认的 memo 比较函数即可
 export const Block = memo(BlockComponent);

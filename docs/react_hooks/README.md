@@ -10,9 +10,9 @@
 - **解决方案：** 合理选择受控 vs 非受控组件
 
 ### [02. useEffect Hook](./02_useEffect.md)
-- **主要问题：** 过度使用 useEffect 处理简单事件响应
-- **核心学习：** 副作用的概念，执行时机，性能影响
-- **解决方案：** 直接在事件处理函数中处理，避免不必要的 effect
+- **主要问题：** 过度使用 useEffect 处理简单事件响应，渲染时更新状态错误
+- **核心学习：** 副作用概念，React 重新渲染机制，setState 无条件触发重新渲染
+- **解决方案：** 使用 useEffect 解决渲染时状态更新问题，理解引用稳定性层次
 
 ### [03. useRef Hook](./03_useRef.md)
 - **主要问题：** 混淆 DOM 引用和数据存储的用法
@@ -63,13 +63,21 @@ export default memo(Block);
 
 ### Reconciler 机制
 - Virtual DOM 比较算法
-- 状态变化触发重新渲染
+- 状态变化触发重新渲染（无条件，不分析 JSX 使用情况）
 - DOM 更新的时机和影响
+- "Cannot update component while rendering" 错误的原因
 
 ### 组件优化策略
-- React.memo 浅比较
-- useCallback/useMemo 缓存
-- 引用稳定性的重要性
+- React.memo 浅比较：对象引用 vs 内容比较
+- useCallback/useMemo 缓存：函数引用稳定性
+- 引用稳定性的层次：对象引用稳定 vs 数组引用变化
+- 直接修改属性 vs 创建新对象的性能差异
+
+### useState 深层理解
+- setState 触发重新渲染的无条件性
+- 对象引用稳定性：`block.content = content` vs `{ ...block, content }`
+- 数组引用变化：`prevBlocks.map()` 总是返回新数组
+- 函数式更新：`setBlocks(prevBlocks => ...)` 的重要性
 
 ### Hook 设计哲学
 - 每个 Hook 都有明确的职责

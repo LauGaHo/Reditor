@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Reditor is a Notion-like editor built with React and Tiptap. The project is in early development with basic TipTap integration established. The goal is to create a block-based editor similar to Notion's interface.
+Reditor is a Notion-like editor built with React and Tiptap. The project is in active development, transitioning from basic TipTap integration to a custom block-based editor similar to Notion's interface.
+
+## 🏗️ Current Development Status
+
+- ✅ **阶段1 已完成：基础块级编辑器**
+  - 实现了单个可编辑文本块
+  - 解决了 contentEditable 光标跳转问题
+  - 学习了 React 状态管理和组件化
+
+- 🚧 **阶段2 进行中：多块管理**
+  - 正在实现多个独立文本块管理
+  - 计划支持 Enter 键创建新块
+  - 计划支持 Backspace 删除空块
 
 ## Development Commands
 

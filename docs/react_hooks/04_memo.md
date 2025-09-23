@@ -158,9 +158,101 @@ const Block = memo(({ initialContent, placeholder, onContentChange }: BlockProps
 3. **引用相等性** - 对象和函数需要保持相同的引用才能被认为是"相等"
 4. **性能优化策略** - memo + useCallback + useMemo 的组合使用
 
+## 多块编辑器中的实际应用
+
+### Block 组件的 memo 优化
+
+```tsx
+// Block.tsx - 最终简化版本
+import { memo } from "react";
+
+const BlockComponent = ({
+  block,
+  placeholder,
+  onContentChange,
+  onEnterPress,
+  onDeleteBlock,
+}: BlockProps) => {
+  // 组件逻辑...
+
+  return (
+    <div
+      contentEditable
+      suppressContentEditableWarning
+      onInput={handleInput}
+      onKeyDown={handleKeyDown}
+      dangerouslySetInnerHTML={{ __html: block.content }}
+    />
+  );
+};
+
+// ✅ 使用默认的 memo 即可，因为我们保证了对象引用稳定性
+export const Block = memo(BlockComponent);
+```
+
+### 核心优化策略：对象引用稳定性
+
+```tsx
+// MultiBlockEditor.tsx
+const handleContentChange = useCallback((blockId: string, content: string) => {
+  setBlocks((prevBlocks) => {
+    const newBlocks = prevBlocks.map((block) => {
+      if (block.id === blockId) {
+        if (block.content === content) {
+          return block; // ✅ 内容没变，保持引用
+        }
+        block.content = content; // ✅ 直接修改，保持对象引用
+        return block;
+      }
+      return block; // ✅ 其他块保持原引用
+    });
+    return newBlocks;
+  });
+}, [onBlocksChange]);
+```
+
+**为什么这种方式有效：**
+
+1. **对象引用稳定** - `block.content = content` 保持 block 对象引用不变
+2. **函数引用稳定** - `useCallback` 保持事件处理函数引用不变
+3. **默认 memo 足够** - 所有 props 都引用稳定，不需要自定义比较函数
+
+### 性能对比
+
+```tsx
+// ❌ 错误方式：破坏对象引用
+const newBlocks = prevBlocks.map((block) =>
+  block.id === blockId ? { ...block, content } : block
+);
+// 结果：每次输入都创建新对象 → memo 失效 → 所有 Block 重新渲染
+
+// ✅ 正确方式：保持对象引用
+const newBlocks = prevBlocks.map((block) => {
+  if (block.id === blockId) {
+    block.content = content; // 直接修改
+    return block;
+  }
+  return block;
+});
+// 结果：只有修改的对象引用变化 → memo 生效 → 只有变化的 Block 重新渲染
+```
+
+### 调试技巧：验证 memo 是否生效
+
+```tsx
+// 在组件内部添加调试日志
+const BlockComponent = ({ block, ...props }: BlockProps) => {
+  console.log(`🔄 Block ${block.id.slice(-6)} 重新渲染`);
+
+  // 如果只在内容真正变化时看到这个日志，说明 memo 工作正常
+  // 如果每次输入都看到，说明 props 引用在变化
+};
+```
+
 ## 最佳实践
 
 - 与 `useCallback` 和 `useMemo` 配合使用
+- 优先保证 props 引用稳定性，而不是依赖复杂的比较函数
+- 理解对象引用稳定性的重要性：直接修改 vs 创建新对象
+- 使用调试日志验证优化效果
 - 不要过度使用，先测量性能再优化
-- 理解浅比较的限制
-- 考虑使用自定义比较函数来精确控制

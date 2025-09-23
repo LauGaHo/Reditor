@@ -205,12 +205,98 @@ const handleClick = () => {
 };
 ```
 
+## 在多块编辑器中的实际应用
+
+### MultiBlockEditor 组件中的事件处理函数
+
+```tsx
+// MultiBlockEditor.tsx - 实际项目代码
+const MultiBlockEditorComponent = ({ onBlocksChange }: MultiBlockEditorProps) => {
+  const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks);
+
+  // ✅ 使用 useCallback 稳定函数引用
+  const handleContentChange = useCallback(
+    (blockId: string, content: string) => {
+      setBlocks((prevBlocks) => {
+        const newBlocks = prevBlocks.map((block) => {
+          if (block.id === blockId) {
+            if (block.content === content) {
+              return block; // 内容没变，保持引用
+            }
+            block.content = content; // 直接修改，保持对象引用
+            return block;
+          }
+          return block;
+        });
+
+        if (onBlocksChange) {
+          onBlocksChange(newBlocks);
+        }
+        return newBlocks;
+      });
+    },
+    [onBlocksChange], // 依赖 onBlocksChange
+  );
+
+  const handleEnterPress = useCallback(
+    (blockId: string) => {
+      setBlocks((prevBlocks) => {
+        // ... 创建新块的逻辑
+      });
+    },
+    [onBlocksChange],
+  );
+
+  const handleDeleteBlock = useCallback(
+    (blockId: string) => {
+      setBlocks((prevBlocks) => {
+        // ... 删除块的逻辑
+      });
+    },
+    [onBlocksChange],
+  );
+
+  return (
+    <div>
+      {blocks.map((block) => (
+        <Block
+          key={block.id}
+          block={block}
+          onContentChange={handleContentChange} // ✅ 稳定的函数引用
+          onEnterPress={handleEnterPress}       // ✅ 稳定的函数引用
+          onDeleteBlock={handleDeleteBlock}     // ✅ 稳定的函数引用
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+**关键优化点：**
+
+1. **函数引用稳定性**: 所有事件处理函数都用 `useCallback` 包装
+2. **配合对象引用稳定性**: 配合 `block.content = content` 实现双重优化
+3. **正确的依赖数组**: 包含 `onBlocksChange` 依赖，确保父组件回调变化时函数能更新
+
+### 性能效果分析
+
+```tsx
+// 没有 useCallback 的情况
+❌ 用户输入 → setBlocks → MultiBlockEditor 重新渲染 → 创建新的事件处理函数 →
+   所有 Block 组件收到新的 props → 所有 Block 重新渲染
+
+// 使用 useCallback 的情况
+✅ 用户输入 → setBlocks → MultiBlockEditor 重新渲染 → 事件处理函数引用不变 →
+   只有内容变化的 Block 重新渲染（由于对象引用稳定性）
+```
+
 ## 在我们项目中的关键作用
 
 1. **解决 memo 失效问题** - 确保 Block 组件的 props 真正稳定
 2. **提升性能** - 避免不必要的重新渲染
 3. **函数引用稳定性** - 让组件优化策略真正生效
 4. **调试友好** - 通过减少重新渲染，让调试日志更清晰
+5. **配合对象引用优化** - 与 `block.content = content` 形成完整的性能优化方案
 
 ## 最佳实践
 
