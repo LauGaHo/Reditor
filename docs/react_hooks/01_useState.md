@@ -7,7 +7,7 @@
 ## 语法
 
 ```tsx
-const [state, setState] = useState(initialValue)
+const [state, setState] = useState(initialValue);
 ```
 
 ## 在项目中的使用案例
@@ -43,6 +43,7 @@ return (
 ```
 
 **遇到的问题：**
+
 - 每次输入都会触发状态更新
 - 状态更新导致组件重新渲染
 - React reconciler 重新创建 DOM 内容
@@ -67,11 +68,7 @@ const handleContentChange = useCallback((blockId: string, content: string) => {
   setBlocks((prevBlocks) => {
     const newBlocks = prevBlocks.map((block) => {
       if (block.id === blockId) {
-        if (block.content === content) {
-          return block; // 内容没变，保持引用
-        }
         block.content = content; // ✅ 直接修改，保持对象引用
-        return block;
       }
       return block;
     });
@@ -81,6 +78,7 @@ const handleContentChange = useCallback((blockId: string, content: string) => {
 ```
 
 **关键优化：**
+
 - 使用函数式更新 `setBlocks(prevBlocks => ...)` 获取最新状态
 - 直接修改对象属性而不是创建新对象，保持引用稳定性
 - 配合 `memo` 实现精确的重新渲染控制
@@ -91,7 +89,7 @@ const handleContentChange = useCallback((blockId: string, content: string) => {
 
 ```tsx
 // ❌ 错误：每次都创建新对象，破坏引用相等性
-block.id === blockId ? { ...block, content } : block
+block.id === blockId ? { ...block, content } : block;
 
 // ✅ 正确：直接修改属性，保持对象引用
 if (block.id === blockId) {
@@ -101,6 +99,7 @@ if (block.id === blockId) {
 ```
 
 **为什么重要：**
+
 - React.memo 使用浅比较检查 props 是否变化
 - 对象引用相同时，memo 会跳过重新渲染
 - 这是 React 性能优化的核心机制
@@ -113,3 +112,4 @@ if (block.id === blockId) {
 - ✅ 在性能敏感场景下保持对象引用稳定性
 - ❌ 避免在 contentEditable 中直接绑定内容状态
 - ❌ 避免不必要的状态，简单的数据可以用 useRef
+
