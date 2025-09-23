@@ -9,7 +9,6 @@ function App() {
 
   const handleBlocksChange = useCallback((blocks: BlockData[]) => {
     setAllBlocks(blocks);
-    console.log("块结构变化:", blocks.map(b => ({ id: b.id.slice(-6), content: b.content.slice(0, 20) })));
   }, []);
 
   return (
@@ -29,13 +28,19 @@ function App() {
       >
         <strong>多块编辑器状态:</strong>
         <div>总块数: {allBlocks.length}</div>
-        <div>块内容预览: {allBlocks.map((b, i) => `${i + 1}. "${b.content.slice(0, 15)}..."`).join(' | ')}</div>
+        <div>
+          块内容预览:{" "}
+          {allBlocks
+            .map((b, i) => `${i + 1}. "${b.content.slice(0, 15)}..."`)
+            .join(" | ")}
+        </div>
       </div>
 
       <MultiBlockEditor onBlocksChange={handleBlocksChange} />
 
       <p style={{ marginTop: "20px", fontSize: "14px", color: "#666" }}>
-        💡 试试输入文本！按 <kbd>Enter</kbd> 创建新块，在空块中按 <kbd>Backspace</kbd> 删除块。
+        💡 试试输入文本！按 <kbd>Enter</kbd> 创建新块，在空块中按{" "}
+        <kbd>Backspace</kbd> 删除块。
       </p>
     </div>
   );

@@ -16,15 +16,6 @@ const BlockComponent = ({
   onEnterPress,
   onDeleteBlock,
 }: BlockProps) => {
-  // 调试：记录每次渲染和 props 变化
-  console.log(
-    `🔄 Block ${block.id.slice(-6)} 重新渲染`,
-    {
-      content: `"${block.content.slice(0, 20)}"`,
-      placeholder,
-    }
-  );
-
   // 事件处理函数：处理用户输入
   const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
     const newContent = event.currentTarget.textContent || "";
@@ -78,3 +69,4 @@ const BlockComponent = ({
 
 // 使用默认的 memo 比较函数即可
 export const Block = memo(BlockComponent);
+

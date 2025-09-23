@@ -17,7 +17,6 @@ const MultiBlockEditorComponent = ({
 
   // 通知父组件块变化 - 避免在渲染过程中调用
   useEffect(() => {
-    console.log("calling the useEffect");
     if (onBlocksChange) {
       onBlocksChange(blocks);
     }
@@ -29,19 +28,7 @@ const MultiBlockEditorComponent = ({
       setBlocks((prevBlocks) => {
         const newBlocks = prevBlocks.map((block) => {
           if (block.id === blockId) {
-            // 如果内容没有变化，返回原对象（保持引用）
-            if (block.content === content) {
-              console.log(
-                `📌 内容未变化，保持引用 Block ${block.id.slice(-6)}`,
-              );
-              return block;
-            }
-            // 内容变化了，直接修改对象
-            console.log(
-              `✏️ 内容变化 Block ${block.id.slice(-6)}: "${block.content}" → "${content}"`,
-            );
             block.content = content;
-            return block;
           }
           return block;
         });
@@ -117,3 +104,4 @@ const MultiBlockEditorComponent = ({
 };
 
 export const MultiBlockEditor = MultiBlockEditorComponent;
+
