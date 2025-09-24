@@ -104,12 +104,127 @@ if (block.id === blockId) {
 - 对象引用相同时，memo 会跳过重新渲染
 - 这是 React 性能优化的核心机制
 
+## React 的内置优化机制：引用相等性检查
+
+这是一个非常重要但容易被忽略的机制！
+
+### 核心原理
+
+React 在 `setState` 时会进行 **引用相等性检查**：
+
+```tsx
+const [blocks, setBlocks] = useState(initialBlocks);
+
+// 情况1: 返回相同引用
+setBlocks(prevBlocks => {
+  targetBlock.content = newContent; // 直接修改属性
+  return prevBlocks; // ✅ 相同引用
+});
+// 结果: Object.is(prevBlocks, prevBlocks) === true
+// React 行为: 跳过重新渲染和 useEffect 执行！
+
+// 情况2: 返回新引用
+setBlocks(prevBlocks => {
+  return [...prevBlocks, newBlock]; // ❌ 新数组
+});
+// 结果: Object.is(newArray, prevBlocks) === false
+// React 行为: 触发重新渲染和 useEffect
+```
+
+### 实际影响
+
+```tsx
+// 用户输入时
+const handleContentChange = (blockId, content) => {
+  setBlocks(prevBlocks => {
+    targetBlock.content = content;
+    return prevBlocks; // 相同引用
+  });
+
+  // 这时会发生什么？
+  // 1. React 检查: Object.is(prevBlocks, prevBlocks) === true
+  // 2. React 判断: "状态没有变化"
+  // 3. React 行为: 跳过重新渲染
+  // 4. useEffect 不会执行！
+  // 5. 父组件不会收到 onBlocksChange 回调！
+};
+
+// 按回车创建新块时
+const handleEnterPress = (blockId) => {
+  setBlocks(prevBlocks => {
+    return [...prevBlocks, newBlock]; // 新数组
+  });
+
+  // 这时会发生什么？
+  // 1. React 检查: Object.is(newArray, prevBlocks) === false
+  // 2. React 判断: "状态已变化"
+  // 3. React 行为: 触发重新渲染
+  // 4. useEffect 正常执行！
+  // 5. 父组件收到 onBlocksChange 回调！
+};
+```
+
+### 解决 useEffect 不执行的问题
+
+当使用引用稳定策略时，需要手动通知：
+
+```tsx
+const handleContentChange = useCallback((blockId: string, content: string) => {
+  setBlocks(prevBlocks => {
+    const targetBlock = prevBlocks.find(block => block.id === blockId);
+    if (targetBlock && targetBlock.content !== content) {
+      targetBlock.content = content;
+
+      // 手动通知父组件，因为 useEffect 不会执行
+      queueMicrotask(() => {
+        if (onBlocksChange) {
+          onBlocksChange(prevBlocks);
+        }
+      });
+    }
+    return prevBlocks; // 相同引用，useEffect 不执行
+  });
+}, [onBlocksChange]);
+```
+
+### 设计权衡
+
+**引用稳定策略的优缺点：**
+
+✅ **优点:**
+- Block 组件 memo 生效，性能最优
+- useMemo 依赖稳定，避免重复计算
+- 渲染次数最少
+
+❌ **缺点:**
+- useEffect 不会自动执行
+- 需要手动管理副作用通知
+- 代码复杂度略高
+
+**新引用策略的优缺点：**
+
+✅ **优点:**
+- useEffect 正常工作
+- 副作用管理简单
+- 代码逻辑清晰
+
+❌ **缺点:**
+- 每次输入都触发重新渲染
+- memo 优化失效
+- 性能较差
+
 ## 最佳实践
 
 - ✅ 用于真正需要响应式更新的 UI 状态
 - ✅ 用于父子组件间的数据同步
 - ✅ 使用函数式更新获取最新状态值
+- ✅ 理解 React 的引用相等性优化机制
 - ✅ 在性能敏感场景下保持对象引用稳定性
+- ✅ 引用稳定时手动管理副作用通知
 - ❌ 避免在 contentEditable 中直接绑定内容状态
 - ❌ 避免不必要的状态，简单的数据可以用 useRef
+
+## 核心理解
+
+**React 的 setState 不是无条件触发重新渲染的！** 它会先进行引用相等性检查，这是一个重要的性能优化机制。理解这一点对于写出高性能的 React 代码至关重要。
 
