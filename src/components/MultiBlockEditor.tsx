@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { BlockData } from "../types/block";
 import { createBlock } from "../types/block";
 import { Block, type BlockHandle } from "./Block";
+import { useFocusNewItem } from "../hooks/useFocusNewItem";
 
 interface MultiBlockEditorProps {
   initialBlocks?: BlockData[];
@@ -15,11 +16,11 @@ const MultiBlockEditorComponent = ({
   // 使用数组管理多个块
   const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks);
 
-  // 使用回车 Enter 新建了块之后，存储新块 ID 以便设置焦点
-  const [newBlockId, setNewBlockId] = useState<string>("");
-
   // 存储每个块的 DOM ref
   const blockRefs = useRef(new Map<string, BlockHandle>());
+
+  // 使用自定义 Hook 管理新块的自动聚焦
+  const focusNewBlock = useFocusNewItem(blockRefs);
   // 缓存回调函数，避免每次渲染都创建新函数
   const callbackCache = useRef(
     new Map<string, (element: BlockHandle | null) => void>(),
@@ -66,20 +67,9 @@ const MultiBlockEditorComponent = ({
       return newBlocks;
     });
 
-    // 设置新块 ID 以便后续设置焦点，这里是结合着下边的 useEffect 一起用的
-    setNewBlockId(newBlock.id);
-  }, []);
-
-  // 设置新块焦点
-  useEffect(() => {
-    if (newBlockId) {
-      const newBlockElement = blockRefs.current.get(newBlockId);
-      console.log("新块元素：", newBlockElement);
-      if (newBlockElement) {
-        newBlockElement.focus();
-      }
-    }
-  }, [newBlockId]);
+    // 触发新块自动聚焦
+    focusNewBlock(newBlock.id);
+  }, [focusNewBlock]);
 
   // 删除块
   const handleDeleteBlock = useCallback((blockId: string) => {
