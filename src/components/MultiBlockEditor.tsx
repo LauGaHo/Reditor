@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { Block } from "./Block";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BlockData } from "../types/block";
 import { createBlock } from "../types/block";
+import { Block } from "./Block";
 
 interface MultiBlockEditorProps {
   initialBlocks?: BlockData[];
@@ -16,7 +16,11 @@ const MultiBlockEditorComponent = ({
   const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks);
 
   // 存储每个块的 DOM ref
-  const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const blockRefs = useRef(new Map<string, HTMLDivElement>());
+  // 缓存回调函数，避免每次渲染都创建新函数
+  const callbackCache = useRef(
+    new Map<string, (element: HTMLDivElement | null) => void>(),
+  );
 
   // 通知父组件块变化 - 避免在渲染过程中调用
   useEffect(() => {
@@ -81,22 +85,19 @@ const MultiBlockEditorComponent = ({
     });
   }, []);
 
-  // 为每个 block 创建稳定的 ref 回调函数
-  const blockRefCallbacks = useMemo(() => {
-    const callbacks = new Map<string, (element: HTMLDivElement | null) => void>();
-
-    blocks.forEach(block => {
-      callbacks.set(block.id, (element) => {
+  // 稳定的回调获取函数
+  const getRefCallback = useCallback((blockId: string) => {
+    if (!callbackCache.current.has(blockId)) {
+      callbackCache.current.set(blockId, (element: HTMLDivElement | null) => {
         if (element) {
-          blockRefs.current.set(block.id, element);
+          blockRefs.current.set(blockId, element);
         } else {
-          blockRefs.current.delete(block.id);
+          blockRefs.current.delete(blockId);
         }
       });
-    });
-
-    return callbacks;
-  }, [blocks]);
+    }
+    return callbackCache.current.get(blockId)!;
+  }, []);
 
   return (
     <div className="multi-block-editor">
@@ -104,7 +105,7 @@ const MultiBlockEditorComponent = ({
       {blocks.map((block, index) => (
         <Block
           key={block.id} // 重要：使用唯一的 key
-          ref={blockRefCallbacks.get(block.id)!}
+          ref={getRefCallback(block.id)}
           block={block} // 对象引用稳定的 block
           placeholder={index === 0 ? "开始输入..." : "继续输入..."}
           onContentChange={handleContentChange}
