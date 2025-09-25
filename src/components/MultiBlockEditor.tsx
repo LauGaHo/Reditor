@@ -15,6 +15,9 @@ const MultiBlockEditorComponent = ({
   // 使用数组管理多个块
   const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks);
 
+  // 使用回车 Enter 新建了块之后，存储新块 ID 以便设置焦点
+  const [newBlockId, setNewBlockId] = useState<string>("");
+
   // 存储每个块的 DOM ref
   const blockRefs = useRef(new Map<string, BlockHandle>());
   // 缓存回调函数，避免每次渲染都创建新函数
@@ -48,9 +51,10 @@ const MultiBlockEditorComponent = ({
 
   // 处理回车键：在指定块后面创建新块
   const handleEnterPress = useCallback((blockId: string) => {
+    const newBlock = createBlock(); // 创建空的新块
+
     setBlocks((prevBlocks) => {
       const blockIndex = prevBlocks.findIndex((block) => block.id === blockId);
-      const newBlock = createBlock(); // 创建空的新块
 
       // 在指定位置插入新块
       const newBlocks = [
@@ -59,17 +63,23 @@ const MultiBlockEditorComponent = ({
         ...prevBlocks.slice(blockIndex + 1),
       ];
 
-      // 使用 setTimeout 确保新块渲染完成后再设置焦点
-      setTimeout(() => {
-        const newBlockElement = blockRefs.current.get(newBlock.id);
-        if (newBlockElement) {
-          newBlockElement.focus();
-        }
-      }, 0);
-
       return newBlocks;
     });
+
+    // 设置新块 ID 以便后续设置焦点，这里是结合着下边的 useEffect 一起用的
+    setNewBlockId(newBlock.id);
   }, []);
+
+  // 设置新块焦点
+  useEffect(() => {
+    if (newBlockId) {
+      const newBlockElement = blockRefs.current.get(newBlockId);
+      console.log("新块元素：", newBlockElement);
+      if (newBlockElement) {
+        newBlockElement.focus();
+      }
+    }
+  }, [newBlockId]);
 
   // 删除块
   const handleDeleteBlock = useCallback((blockId: string) => {

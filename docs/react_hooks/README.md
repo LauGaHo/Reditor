@@ -34,6 +34,11 @@
 - **核心学习：** 计算值缓存，与 useCallback 的区别，引用稳定性
 - **解决方案：** 使用 useMemo 创建稳定的函数引用 Map
 
+### [07. 综合案例：状态更新时机](./07_综合案例_状态更新时机.md)
+- **主要问题：** 在 useState 回调内调用 setState 导致执行时序错乱
+- **核心学习：** React 状态更新机制，useEffect vs useLayoutEffect，useImperativeHandle
+- **解决方案：** 分离状态更新调用，理解 React 批量更新机制
+
 ## 核心问题回顾
 
 ### 问题链条：contentEditable + React 状态管理
@@ -59,6 +64,18 @@ export default memo(Block);
 // 第四版：完善引用稳定性
 const blockRefCallbacks = useMemo(() => createStableRefs(), [blocks]);
 <Block ref={blockRefCallbacks.get(block.id)} />;
+
+// 第五版：useImperativeHandle + 懒加载优化
+const getRefCallback = useCallback((blockId) => {
+  if (!callbackCache.current.has(blockId)) {
+    callbackCache.current.set(blockId, createRef(blockId));
+  }
+  return callbackCache.current.get(blockId);
+}, []);
+
+// 第六版：状态更新时机优化
+setBlocks(newBlocks);        // 先处理主要状态
+setNewBlockId(newBlock.id);  // 再处理辅助状态
 ```
 
 ## 设计原则总结
@@ -75,6 +92,8 @@ const blockRefCallbacks = useMemo(() => createStableRefs(), [blocks]);
 - 状态变化触发重新渲染（无条件，不分析 JSX 使用情况）
 - DOM 更新的时机和影响
 - "Cannot update component while rendering" 错误的原因
+- React 18 的自动批量更新机制
+- useState 回调内调用 setState 的时序陷阱
 
 ### 组件优化策略
 - React.memo 浅比较：对象引用 vs 内容比较
@@ -93,12 +112,15 @@ const blockRefCallbacks = useMemo(() => createStableRefs(), [blocks]);
 - 每个 Hook 都有明确的职责
 - 组合使用实现复杂功能
 - 理解而不是死记硬背
+- 状态更新时机决定执行顺序
+- 接口抽象优于直接暴露实现
 
 ## 下一步学习方向
 
 - useContext（状态提升和共享）
+- useImperativeHandle（组件方法暴露，已在综合案例中涉及）
 - 自定义 Hook（逻辑复用）
-- useLayoutEffect（同步 DOM 操作）
+- useLayoutEffect（同步 DOM 操作，已在综合案例中涉及）
 - useReducer（复杂状态管理）
 
 这些文档记录了真实开发中遇到的问题和思考过程，比单纯的 API 文档更有学习价值。
