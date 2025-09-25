@@ -39,6 +39,11 @@
 - **核心学习：** React 状态更新机制，useEffect vs useLayoutEffect，useImperativeHandle
 - **解决方案：** 分离状态更新调用，理解 React 批量更新机制
 
+### [08. useImperativeHandle Hook](./08_useImperativeHandle.md)
+- **主要问题：** 如何在保持组件封装性的同时暴露方法给父组件调用
+- **核心学习：** 组件接口设计，forwardRef 配合使用，TypeScript 接口约束
+- **解决方案：** 使用 useImperativeHandle 创建清晰的组件 API
+
 ## 核心问题回顾
 
 ### 问题链条：contentEditable + React 状态管理
@@ -118,8 +123,7 @@ setNewBlockId(newBlock.id);  // 再处理辅助状态
 ## 下一步学习方向
 
 - useContext（状态提升和共享）
-- useImperativeHandle（组件方法暴露，已在综合案例中涉及）
-- 自定义 Hook（逻辑复用）
+- 自定义 Hook（逻辑复用，已在 useFocusNewItem 中涉及）
 - useLayoutEffect（同步 DOM 操作，已在综合案例中涉及）
 - useReducer（复杂状态管理）
 
