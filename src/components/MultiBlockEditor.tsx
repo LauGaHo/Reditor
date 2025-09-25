@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BlockData } from "../types/block";
 import { createBlock } from "../types/block";
-import { Block } from "./Block";
+import { Block, type BlockHandle } from "./Block";
 
 interface MultiBlockEditorProps {
   initialBlocks?: BlockData[];
@@ -16,10 +16,10 @@ const MultiBlockEditorComponent = ({
   const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks);
 
   // 存储每个块的 DOM ref
-  const blockRefs = useRef(new Map<string, HTMLDivElement>());
+  const blockRefs = useRef(new Map<string, BlockHandle>());
   // 缓存回调函数，避免每次渲染都创建新函数
   const callbackCache = useRef(
-    new Map<string, (element: HTMLDivElement | null) => void>(),
+    new Map<string, (element: BlockHandle | null) => void>(),
   );
 
   // 通知父组件块变化 - 避免在渲染过程中调用
@@ -88,7 +88,7 @@ const MultiBlockEditorComponent = ({
   // 稳定的回调获取函数
   const getRefCallback = useCallback((blockId: string) => {
     if (!callbackCache.current.has(blockId)) {
-      callbackCache.current.set(blockId, (element: HTMLDivElement | null) => {
+      callbackCache.current.set(blockId, (element: BlockHandle | null) => {
         if (element) {
           blockRefs.current.set(blockId, element);
         } else {

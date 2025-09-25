@@ -1,4 +1,4 @@
-import { forwardRef, memo } from "react";
+import { forwardRef, memo, useImperativeHandle, useRef } from "react";
 import type { BlockData } from "../types/block";
 
 interface BlockProps {
@@ -9,7 +9,11 @@ interface BlockProps {
   onDeleteBlock?: (blockId: string) => void; // 删除块
 }
 
-const BlockComponent = forwardRef<HTMLDivElement, BlockProps>(
+export interface BlockHandle {
+  focus: () => void;
+}
+
+const BlockComponent = forwardRef<BlockHandle, BlockProps>(
   (
     {
       block,
@@ -20,8 +24,18 @@ const BlockComponent = forwardRef<HTMLDivElement, BlockProps>(
     },
     ref,
   ) => {
-    // 如果父组件传入了 ref，就使用父组件的，否则使用内部的
-    const actualRef = ref;
+    const divRef = useRef<HTMLDivElement>(null);
+
+    // 暴露给父组件的方法
+    useImperativeHandle(
+      ref,
+      () => ({
+        focus: () => {
+          divRef.current?.focus();
+        },
+      }),
+      [],
+    );
     // 事件处理函数：处理用户输入
     const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
       const newContent = event.currentTarget.textContent || "";
@@ -52,7 +66,7 @@ const BlockComponent = forwardRef<HTMLDivElement, BlockProps>(
 
     return (
       <div
-        ref={actualRef}
+        ref={divRef}
         contentEditable
         suppressContentEditableWarning
         onInput={handleInput}
