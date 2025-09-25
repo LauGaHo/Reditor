@@ -21,6 +21,7 @@ const MultiBlockEditorComponent = ({
 
   // 使用自定义 Hook 管理新块的自动聚焦
   const focusNewBlock = useFocusNewItem(blockRefs);
+
   // 缓存回调函数，避免每次渲染都创建新函数
   const callbackCache = useRef(
     new Map<string, (element: BlockHandle | null) => void>(),
@@ -51,25 +52,30 @@ const MultiBlockEditorComponent = ({
   );
 
   // 处理回车键：在指定块后面创建新块
-  const handleEnterPress = useCallback((blockId: string) => {
-    const newBlock = createBlock(); // 创建空的新块
+  const handleEnterPress = useCallback(
+    (blockId: string) => {
+      const newBlock = createBlock(); // 创建空的新块
 
-    setBlocks((prevBlocks) => {
-      const blockIndex = prevBlocks.findIndex((block) => block.id === blockId);
+      setBlocks((prevBlocks) => {
+        const blockIndex = prevBlocks.findIndex(
+          (block) => block.id === blockId,
+        );
 
-      // 在指定位置插入新块
-      const newBlocks = [
-        ...prevBlocks.slice(0, blockIndex + 1),
-        newBlock,
-        ...prevBlocks.slice(blockIndex + 1),
-      ];
+        // 在指定位置插入新块
+        const newBlocks = [
+          ...prevBlocks.slice(0, blockIndex + 1),
+          newBlock,
+          ...prevBlocks.slice(blockIndex + 1),
+        ];
 
-      return newBlocks;
-    });
+        return newBlocks;
+      });
 
-    // 触发新块自动聚焦
-    focusNewBlock(newBlock.id);
-  }, [focusNewBlock]);
+      // 触发新块自动聚焦
+      focusNewBlock(newBlock.id);
+    },
+    [focusNewBlock],
+  );
 
   // 删除块
   const handleDeleteBlock = useCallback((blockId: string) => {
