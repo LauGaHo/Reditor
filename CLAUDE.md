@@ -13,10 +13,15 @@ Reditor is a Notion-like editor built with React and Tiptap. The project is in a
   - 解决了 contentEditable 光标跳转问题
   - 学习了 React 状态管理和组件化
 
-- 🚧 **阶段2 进行中：多块管理**
-  - 正在实现多个独立文本块管理
-  - 计划支持 Enter 键创建新块
-  - 计划支持 Backspace 删除空块
+- ✅ **阶段2 已完成：多块管理**
+  - 实现了多个独立文本块管理（使用数组和 map 渲染）
+  - 支持 Enter 键创建新块并自动聚焦
+  - 支持 Backspace 删除空块
+  - 掌握了 React 列表渲染和 key 概念
+  - 学会了性能优化：React.memo + useCallback + useRef 懒加载
+  - 掌握了 useImperativeHandle 组件接口设计
+  - 理解了 React 状态更新时机和批量处理机制
+  - 学会了自定义 Hook 的抽象和复用
 
 ## Development Commands
 
@@ -75,14 +80,16 @@ The current editor uses TipTap's React integration:
 - 实现基础的文本输入和编辑
 - 学习 React 状态管理 (useState)
 
-### 阶段2：多块管理
+### 阶段2：多块管理 ✅
 
 **目标：** 理解 React 列表渲染和 key 概念
 **实现：** 支持多个独立文本块
 
-- 使用数组管理多个块
-- 实现添加/删除块功能
-- 学习 React 的 map 渲染和 key 属性
+- ✅ 使用数组管理多个块
+- ✅ 实现添加/删除块功能
+- ✅ 学习 React 的 map 渲染和 key 属性
+- ✅ 深入学习性能优化和 Hook 协同
+- ✅ 掌握状态更新时机控制
 
 ### 阶段3：块类型系统
 
