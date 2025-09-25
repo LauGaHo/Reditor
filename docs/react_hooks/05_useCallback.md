@@ -298,9 +298,94 @@ const MultiBlockEditorComponent = ({ onBlocksChange }: MultiBlockEditorProps) =>
 4. **调试友好** - 通过减少重新渲染，让调试日志更清晰
 5. **配合对象引用优化** - 与 `block.content = content` 形成完整的性能优化方案
 
+## 高级模式：懒加载 + 缓存
+
+在复杂场景中，我们可以结合 useCallback 和 useRef 实现更高效的解决方案：
+
+### 懒加载 ref 回调函数
+
+```tsx
+// 终极解决方案：懒加载 + 缓存的 ref 管理
+const callbackCache = useRef(
+  new Map<string, (element: HTMLDivElement | null) => void>(),
+);
+
+const getRefCallback = useCallback((blockId: string) => {
+  if (!callbackCache.current.has(blockId)) {
+    // 懒加载：只在需要时创建回调函数
+    callbackCache.current.set(blockId, (element: HTMLDivElement | null) => {
+      if (element) {
+        blockRefs.current.set(blockId, element);
+      } else {
+        blockRefs.current.delete(blockId);
+      }
+    });
+  }
+  return callbackCache.current.get(blockId)!;
+}, []); // 空依赖数组，函数完全稳定
+
+// 使用
+<Block ref={getRefCallback(block.id)} />
+```
+
+### 优势分析
+
+**相比 useMemo 方案的优势：**
+
+```tsx
+// useMemo 方案：blocks 变化就重新计算
+const blockRefCallbacks = useMemo(() => {
+  // 每次 blocks 变化都要重新创建整个 Map
+  return createAllCallbacks(blocks);
+}, [blocks]);
+
+// 懒加载方案：真正按需创建
+const getRefCallback = useCallback((blockId: string) => {
+  // 只为需要的 blockId 创建回调
+  if (!cache.has(blockId)) {
+    cache.set(blockId, createCallback(blockId));
+  }
+  return cache.get(blockId);
+}, []); // 完全稳定，不依赖任何变量
+```
+
+**性能对比：**
+
+| 场景 | useMemo 方案 | 懒加载方案 |
+|------|-------------|-----------|
+| 用户输入 | 不重新计算 | 不重新计算 |
+| 添加新块 | 重新创建整个 Map | 只创建新的回调 |
+| 删除块 | 重新创建整个 Map | 无需操作 |
+| 内存使用 | 所有回调常驻 | 按需创建，可被 GC |
+
+### 适用场景
+
+**使用懒加载模式的时机：**
+- ✅ 动态列表项的 ref 管理
+- ✅ 大量相似组件的回调函数
+- ✅ 需要极致性能优化的场景
+- ✅ 函数创建成本较高的情况
+
+**使用简单 useCallback 的时机：**
+- ✅ 固定的事件处理函数
+- ✅ API 调用函数
+- ✅ 简单的状态更新函数
+
+## 总结
+
+useCallback 是性能优化的重要工具，核心价值在于：
+
+1. **稳定函数引用** - 配合 memo 实现精确渲染控制
+2. **避免无效重新计算** - 减少子组件不必要的重新渲染
+3. **依赖管理** - 明确函数的依赖关系
+4. **懒加载模式** - 结合 useRef 实现按需创建的高级优化
+
+在 Reditor 项目中，useCallback 经历了从简单缓存到懒加载的演进，最终实现了真正稳定且高效的 ref 管理方案。
+
 ## 最佳实践
 
 - 与 React.memo 配合使用时必须使用 useCallback
 - 依赖数组要完整，包含所有外部变量
 - 不要过度使用，简单场景直接用普通函数
 - 理解闭包和依赖的关系，避免 stale closure 问题
+- 在复杂场景中考虑懒加载 + 缓存的高级模式

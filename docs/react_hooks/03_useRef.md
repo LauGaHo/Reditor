@@ -108,10 +108,169 @@ const startTimer = () => {
 3. **性能优化** - 不需要响应式的数据用 ref 存储，避免不必要的重新渲染
 4. **设计选择** - 在我们的 contentEditable 场景中，最终选择了最简单的方案
 
+## 高级应用：缓存模式
+
+### 使用 useRef 实现函数缓存
+
+在性能要求极高的场景中，我们可以使用 useRef 来缓存计算结果或函数引用：
+
+```tsx
+// 缓存回调函数的高级模式
+const MultiBlockEditor = () => {
+  const blockRefs = useRef(new Map<string, HTMLDivElement>());
+
+  // ✅ 使用 ref 缓存回调函数 Map
+  const callbackCache = useRef(
+    new Map<string, (element: HTMLDivElement | null) => void>(),
+  );
+
+  const getRefCallback = useCallback((blockId: string) => {
+    if (!callbackCache.current.has(blockId)) {
+      // 懒加载：只在需要时创建并缓存回调函数
+      callbackCache.current.set(blockId, (element: HTMLDivElement | null) => {
+        if (element) {
+          blockRefs.current.set(blockId, element);
+        } else {
+          blockRefs.current.delete(blockId);
+        }
+      });
+    }
+    return callbackCache.current.get(blockId)!;
+  }, []);
+
+  return (
+    <div>
+      {blocks.map(block => (
+        <Block
+          key={block.id}
+          ref={getRefCallback(block.id)} // 稳定且高效的 ref 回调
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+### 缓存模式的优势
+
+**相比重复创建的优势：**
+
+| 特性 | 重复创建 | useRef 缓存 |
+|------|---------|-------------|
+| 内存占用 | 每次渲染都创建新对象 | 复用已创建的对象 |
+| GC 压力 | 频繁的垃圾回收 | 减少 GC 压力 |
+| 创建成本 | 每次都付出创建成本 | 一次创建，多次复用 |
+| 引用稳定性 | 引用不稳定 | 引用完全稳定 |
+
+### 缓存计算结果
+
+```tsx
+// 缓存复杂计算的结果
+const ExpensiveComponent = ({ data }) => {
+  // 缓存昂贵的计算结果
+  const expensiveResultCache = useRef(new Map());
+  const lastDataRef = useRef();
+
+  const getExpensiveResult = useMemo(() => {
+    // 如果数据没变，直接返回缓存
+    if (lastDataRef.current === data && expensiveResultCache.current.has(data.id)) {
+      return expensiveResultCache.current.get(data.id);
+    }
+
+    // 执行昂贵计算
+    const result = heavyCalculation(data);
+
+    // 更新缓存
+    expensiveResultCache.current.set(data.id, result);
+    lastDataRef.current = data;
+
+    return result;
+  }, [data]);
+
+  return <div>{getExpensiveResult}</div>;
+};
+```
+
+### 缓存网络请求
+
+```tsx
+const DataFetcher = ({ userId }) => {
+  const [data, setData] = useState(null);
+  const requestCache = useRef(new Map());
+  const abortControllerRef = useRef();
+
+  const fetchData = useCallback(async (id) => {
+    // 检查缓存
+    if (requestCache.current.has(id)) {
+      setData(requestCache.current.get(id));
+      return;
+    }
+
+    // 取消之前的请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 创建新的请求
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch(`/api/users/${id}`, {
+        signal: abortControllerRef.current.signal
+      });
+      const result = await response.json();
+
+      // 缓存结果
+      requestCache.current.set(id, result);
+      setData(result);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('请求失败:', error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData(userId);
+  }, [userId, fetchData]);
+
+  return <div>{data?.name}</div>;
+};
+```
+
+## 设计模式总结
+
+### 1. DOM 引用模式
+```tsx
+const domRef = useRef<HTMLElement>(null);
+// 用于：焦点管理、滚动控制、测量等
+```
+
+### 2. 数据缓存模式
+```tsx
+const cacheRef = useRef(new Map());
+// 用于：避免重复计算、存储临时状态等
+```
+
+### 3. 函数缓存模式
+```tsx
+const callbackCacheRef = useRef(new Map());
+// 用于：稳定的回调函数引用、性能优化等
+```
+
+### 4. 实例存储模式
+```tsx
+const instanceRef = useRef();
+// 用于：定时器 ID、订阅对象、第三方库实例等
+```
+
 ## 最佳实践
 
 - ✅ 用于需要直接访问的 DOM 元素
 - ✅ 用于存储不需要触发重新渲染的数据
 - ✅ 用于存储定时器 ID、订阅等
+- ✅ 用于实现高效的缓存机制
+- ✅ 配合 useCallback 实现懒加载模式
 - ❌ 不要用 ref 存储需要响应式更新的 UI 状态
 - ❌ 不要混淆 DOM 引用和数据存储的类型定义
+- ❌ 不要过度缓存，简单数据直接计算即可

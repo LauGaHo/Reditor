@@ -263,4 +263,118 @@ useMemo 解决了 Block 组件列表渲染的性能问题，确保了：
 - React.memo 优化的有效性
 - 整体编辑器的流畅体验
 
+## 方案对比与演进
+
+### 从 useMemo 到 useCallback + useRef 的演进过程
+
+在我们的项目中，ref 回调管理经历了不同方案的演进：
+
+### 方案1: 每次创建（性能最差）
+
+```tsx
+{blocks.map(block => (
+  <Block
+    ref={(element) => {  // ❌ 每次都创建新函数
+      if (element) {
+        blockRefs.current.set(block.id, element);
+      }
+    }}
+  />
+))}
+```
+
+**问题：** memo 完全失效，每次都重新渲染
+
+### 方案2: useMemo 批量创建（中等性能）
+
+```tsx
+const blockRefCallbacks = useMemo(() => {
+  const callbacks = new Map();
+  blocks.forEach(block => {
+    callbacks.set(block.id, (element) => {
+      // ref 逻辑
+    });
+  });
+  return callbacks;
+}, [blocks]); // blocks 变化时重新创建整个 Map
+```
+
+**问题：** 用户输入时 blocks 变化 → 重新创建所有回调函数
+
+### 方案3: useCallback + useRef 懒加载（最优性能）
+
+```tsx
+const callbackCache = useRef(new Map());
+
+const getRefCallback = useCallback((blockId: string) => {
+  if (!callbackCache.current.has(blockId)) {
+    callbackCache.current.set(blockId, (element) => {
+      // ref 逻辑
+    });
+  }
+  return callbackCache.current.get(blockId)!;
+}, []); // 完全稳定，不依赖任何变量
+```
+
+**优势：** 按需创建，引用完全稳定
+
+### 性能对比表
+
+| 操作场景 | 方案1 | 方案2 (useMemo) | 方案3 (懒加载) |
+|---------|-------|----------------|---------------|
+| 用户输入 | 重新渲染所有 | memo 生效 | memo 生效 |
+| 添加新块 | 重新渲染所有 | 重新创建所有回调 | 只创建新块回调 |
+| 删除块 | 重新渲染所有 | 重新创建所有回调 | 无操作 |
+| 内存效率 | 最差 | 中等 | 最好 |
+| 引用稳定性 | 不稳定 | 部分稳定 | 完全稳定 |
+
+### 何时选择不同方案
+
+**使用 useMemo 的场景：**
+- ✅ 计算结果依赖某些 props/state
+- ✅ 需要批量处理的数据转换
+- ✅ 一次性创建复杂对象
+
+**使用懒加载模式的场景：**
+- ✅ 动态列表的回调函数管理
+- ✅ 需要极致性能的场景
+- ✅ 函数创建成本很高
+- ✅ 希望引用完全稳定
+
+### 实际项目中的选择
+
+在我们的编辑器项目中：
+
+1. **最初选择 useMemo** - 简单直接，解决了基本性能问题
+2. **遇到新问题** - 用户输入导致 blocks 变化，useMemo 重新执行
+3. **升级到懒加载** - 实现了真正的按需创建和完全稳定的引用
+
+这个演进过程体现了：
+- **渐进式优化** - 先解决主要问题，再优化细节
+- **问题驱动** - 遇到具体性能瓶颈时才进一步优化
+- **方案权衡** - 根据实际需求选择最合适的技术方案
+
+## 总结
+
+### useMemo 的核心价值
+
+1. **性能优化** - 避免重复计算
+2. **引用稳定** - 配合 memo 使用
+3. **依赖追踪** - 精确控制重新计算时机
+4. **方案演进** - 为更高级的优化模式奠定基础
+
+### 设计原则
+
+1. **按需使用** - 不是所有计算都需要缓存
+2. **正确依赖** - 遵循 ESLint 规则
+3. **简单明确** - 避免过度复杂的逻辑
+4. **渐进优化** - 根据实际需求选择方案
+
+### 在 Reditor 项目中的作用
+
+useMemo 在我们的项目中起到了承上启下的作用：
+- 解决了基本的 ref 回调性能问题
+- 为后续的懒加载模式提供了思路
+- 展示了 React 性能优化的演进过程
+
 这是 React 性能优化的重要一环，与 useCallback 和 memo 共同构成了完整的优化策略。
