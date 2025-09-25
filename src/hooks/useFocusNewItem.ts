@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 
 /**
  * 自定义 Hook：管理新创建元素的自动聚焦
@@ -22,10 +22,10 @@ export function useFocusNewItem<T extends { focus(): void }>(
     }
   }, [newItemId, refsMap]);
 
-  // 返回触发聚焦的函数
-  const focusNewItem = (itemId: string) => {
+  // 返回触发聚焦的函数，使用 useCallback 缓存
+  const focusNewItem = useCallback((itemId: string) => {
     setNewItemId(itemId);
-  };
+  }, []);
 
   return focusNewItem;
 }
