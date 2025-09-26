@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BlockData } from "../types/block";
+import type { BlockData, BlockType } from "../types/block";
 import { createBlock } from "../types/block";
-import { Block, type BlockHandle } from "./Block";
+import { BlockWrapper } from "./BlockWrapper";
+import type { BlockHandle } from "../types/blockComponent";
 import { useFocusNewItem } from "../hooks/useFocusNewItem";
 
 interface MultiBlockEditorProps {
@@ -91,6 +92,19 @@ const MultiBlockEditorComponent = ({
     });
   }, []);
 
+  // 处理块类型切换
+  const handleTypeChange = useCallback((blockId: string, newType: BlockType) => {
+    setBlocks((prevBlocks) => {
+      const newBlocks = prevBlocks.map((block) => {
+        if (block.id === blockId) {
+          return { ...block, type: newType };
+        }
+        return block;
+      });
+      return newBlocks;
+    });
+  }, []);
+
   // 稳定的回调获取函数
   const getRefCallback = useCallback((blockId: string) => {
     if (!callbackCache.current.has(blockId)) {
@@ -109,7 +123,7 @@ const MultiBlockEditorComponent = ({
     <div className="multi-block-editor">
       {/* React 列表渲染：直接使用 blocks */}
       {blocks.map((block, index) => (
-        <Block
+        <BlockWrapper
           key={block.id} // 重要：使用唯一的 key
           ref={getRefCallback(block.id)}
           block={block} // 对象引用稳定的 block
@@ -117,6 +131,7 @@ const MultiBlockEditorComponent = ({
           onContentChange={handleContentChange}
           onEnterPress={handleEnterPress}
           onDeleteBlock={handleDeleteBlock}
+          onTypeChange={handleTypeChange}
         />
       ))}
 
@@ -133,7 +148,8 @@ const MultiBlockEditorComponent = ({
         <strong>调试信息：</strong>
         <div>总块数: {blocks.length}</div>
         <div>块ID: {blocks.map((b) => b.id.slice(-6)).join(", ")}</div>
-        <div>✨ 对象引用稳定：防止不必要的重新渲染</div>
+        <div>块类型: {blocks.map((b) => b.type).join(", ")}</div>
+        <div>✨ 阶段3完成：块类型系统支持段落和标题</div>
       </div>
     </div>
   );
