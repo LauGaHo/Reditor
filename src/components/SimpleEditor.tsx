@@ -1,48 +1,14 @@
-import { useEditor, EditorContent, Editor } from '@tiptap/react'
+import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useState } from 'react'
-
-interface MarkState {
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-}
-
-interface NodeState {
-  heading: HeadingState;
-  bulletList: boolean;
-  paragraph: boolean;
-}
-
-interface HeadingState {
-  level: number | null;
-  active: boolean;
-}
-
-interface SelectionState {
-  hasSelection: boolean;
-  markState: MarkState;
-  nodeState: NodeState;
-}
-
+import type { SelectionState } from '../types/editor'
+import { getSelectionState, createInitialSelectionState } from '../utils/editor'
 
 export const SimpleEditor = () => {
   const [content, setContent] = useState('<h1>Reditor</h1><p>一个基于 TipTap 的富文本编辑器</p>')
   const [showPretty, setShowPretty] = useState(false)
 
-  const [selectionState, setSelectionState] = useState<SelectionState>({
-    hasSelection: false,
-    markState: {
-      bold: false,
-      italic: false,
-      underline: false,
-    },
-    nodeState: {
-      heading: { level: null, active: false },
-      bulletList: false,
-      paragraph: false,
-    }
-  })
+  const [selectionState, setSelectionState] = useState<SelectionState>(createInitialSelectionState())
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -51,24 +17,7 @@ export const SimpleEditor = () => {
       setContent(editor.getHTML())
     },
     onSelectionUpdate: ({ editor }) => {
-      const newSelectionState: SelectionState = {
-        hasSelection: !editor.state.selection.empty,
-        markState: {
-          bold: editor.isActive('bold'),
-          italic: editor.isActive('italic'),
-          underline: editor.isActive('underline'),
-        },
-        nodeState: {
-          heading: {
-            level: getActiveHeadingLevel(editor),
-            active: editor.isActive('heading')
-          },
-          bulletList: editor.isActive('bulletList'),
-          paragraph: editor.isActive('paragraph'),
-        }
-      }
-
-      setSelectionState(newSelectionState)
+      setSelectionState(getSelectionState(editor))
     },
     editorProps: {
       attributes: {
@@ -77,15 +26,6 @@ export const SimpleEditor = () => {
     },
   })
 
-  // 获取当前激活的标题级别
-  const getActiveHeadingLevel = (editor: Editor) => {
-    for (let level = 1; level <= 6; level++) {
-      if (editor.isActive('heading', { level })) {
-        return level
-      }
-    }
-    return null
-  }
 
   if (!editor) {
     return <div>Loading...</div>
@@ -118,7 +58,7 @@ export const SimpleEditor = () => {
           <button
             onClick={() => {
               editor.chain().focus().toggleBold().run()
-              setSelectionState(prev => ({...prev, markState: {...prev.markState, bold: !prev.markState.bold}}))
+              setSelectionState(getSelectionState(editor))
             }}
             style={buttonStyle(selectionState.markState.bold)}
           >
@@ -127,7 +67,7 @@ export const SimpleEditor = () => {
           <button
             onClick={() => {
               editor.chain().focus().toggleItalic().run()
-              setSelectionState(prev => ({...prev, markState: {...prev.markState, italic: !prev.markState.italic}}))
+              setSelectionState(getSelectionState(editor))
             }}
             style={buttonStyle(selectionState.markState.italic)}
           >
@@ -136,7 +76,7 @@ export const SimpleEditor = () => {
           <button
             onClick={() => {
               editor.chain().focus().toggleHeading({ level: 1 }).run()
-              setSelectionState(prev => ({...prev, nodeState: {...prev.nodeState, heading: {level: prev.nodeState.heading.level === 1 ? null : 1, active: true}}}))
+              setSelectionState(getSelectionState(editor))
             }}
             style={buttonStyle(selectionState.nodeState.heading.level === 1)}
           >
@@ -145,7 +85,7 @@ export const SimpleEditor = () => {
           <button
             onClick={() => {
               editor.chain().focus().toggleHeading({ level: 2 }).run()
-              setSelectionState(prev => ({...prev, nodeState: {...prev.nodeState, heading: {level: prev.nodeState.heading.level === 2 ? null : 2, active: true}}}))
+              setSelectionState(getSelectionState(editor))
             }}
             style={buttonStyle(selectionState.nodeState.heading.level === 2)}
           >
@@ -154,7 +94,7 @@ export const SimpleEditor = () => {
           <button
             onClick={() => {
               editor.chain().focus().toggleBulletList().run()
-              setSelectionState(prev => ({...prev, nodeState: {...prev.nodeState, bulletList: !prev.nodeState.bulletList}}))
+              setSelectionState(getSelectionState(editor))
             }}
             style={buttonStyle(selectionState.nodeState.bulletList)}
           >
