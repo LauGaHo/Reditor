@@ -1,11 +1,48 @@
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { useState } from 'react'
+
+interface MarkState {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+}
+
+interface NodeState {
+  heading: HeadingState;
+  bulletList: boolean;
+  paragraph: boolean;
+}
+
+interface HeadingState {
+  level: number | null;
+  active: boolean;
+}
+
+interface SelectionState {
+  hasSelection: boolean;
+  markState: MarkState;
+  nodeState: NodeState;
+}
 
 
 export const SimpleEditor = () => {
   const [content, setContent] = useState('<h1>Reditor</h1><p>一个基于 TipTap 的富文本编辑器</p>')
   const [showPretty, setShowPretty] = useState(false)
+
+  const [selectionState, setSelectionState] = useState<SelectionState>({
+    hasSelection: false,
+    markState: {
+      bold: false,
+      italic: false,
+      underline: false,
+    },
+    nodeState: {
+      heading: { level: null, active: false },
+      bulletList: false,
+      paragraph: false,
+    }
+  })
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -13,12 +50,42 @@ export const SimpleEditor = () => {
     onUpdate: ({ editor }) => {
       setContent(editor.getHTML())
     },
+    onSelectionUpdate: ({ editor }) => {
+      const newSelectionState: SelectionState = {
+        hasSelection: !editor.state.selection.empty,
+        markState: {
+          bold: editor.isActive('bold'),
+          italic: editor.isActive('italic'),
+          underline: editor.isActive('underline'),
+        },
+        nodeState: {
+          heading: {
+            level: getActiveHeadingLevel(editor),
+            active: editor.isActive('heading')
+          },
+          bulletList: editor.isActive('bulletList'),
+          paragraph: editor.isActive('paragraph'),
+        }
+      }
+
+      setSelectionState(newSelectionState)
+    },
     editorProps: {
       attributes: {
         style: 'outline: none; min-height: 200px; padding: 16px; line-height: 1.6;',
       },
     },
   })
+
+  // 获取当前激活的标题级别
+  const getActiveHeadingLevel = (editor: Editor) => {
+    for (let level = 1; level <= 6; level++) {
+      if (editor.isActive('heading', { level })) {
+        return level
+      }
+    }
+    return null
+  }
 
   if (!editor) {
     return <div>Loading...</div>
@@ -49,32 +116,47 @@ export const SimpleEditor = () => {
           gap: '4px'
         }}>
           <button
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            style={buttonStyle(editor.isActive('bold'))}
+            onClick={() => {
+              editor.chain().focus().toggleBold().run()
+              setSelectionState(prev => ({...prev, markState: {...prev.markState, bold: !prev.markState.bold}}))
+            }}
+            style={buttonStyle(selectionState.markState.bold)}
           >
             加粗
           </button>
           <button
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            style={buttonStyle(editor.isActive('italic'))}
+            onClick={() => {
+              editor.chain().focus().toggleItalic().run()
+              setSelectionState(prev => ({...prev, markState: {...prev.markState, italic: !prev.markState.italic}}))
+            }}
+            style={buttonStyle(selectionState.markState.italic)}
           >
             斜体
           </button>
           <button
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            style={buttonStyle(editor.isActive('heading', { level: 1 }))}
+            onClick={() => {
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+              setSelectionState(prev => ({...prev, nodeState: {...prev.nodeState, heading: {level: prev.nodeState.heading.level === 1 ? null : 1, active: true}}}))
+            }}
+            style={buttonStyle(selectionState.nodeState.heading.level === 1)}
           >
             H1
           </button>
           <button
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            style={buttonStyle(editor.isActive('heading', { level: 2 }))}
+            onClick={() => {
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+              setSelectionState(prev => ({...prev, nodeState: {...prev.nodeState, heading: {level: prev.nodeState.heading.level === 2 ? null : 2, active: true}}}))
+            }}
+            style={buttonStyle(selectionState.nodeState.heading.level === 2)}
           >
             H2
           </button>
           <button
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            style={buttonStyle(editor.isActive('bulletList'))}
+            onClick={() => {
+              editor.chain().focus().toggleBulletList().run()
+              setSelectionState(prev => ({...prev, nodeState: {...prev.nodeState, bulletList: !prev.nodeState.bulletList}}))
+            }}
+            style={buttonStyle(selectionState.nodeState.bulletList)}
           >
             列表
           </button>
