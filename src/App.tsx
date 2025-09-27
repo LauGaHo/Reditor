@@ -1,47 +1,30 @@
-import { useState, useCallback } from "react";
-import { MultiBlockEditor } from "./components";
-import type { BlockData } from "./types/block";
+import { SimpleEditor } from "./components/SimpleEditor";
 import "./App.css";
 
 function App() {
-  // 管理所有块的状态
-  const [allBlocks, setAllBlocks] = useState<BlockData[]>([]);
-
-  const handleBlocksChange = useCallback((blocks: BlockData[]) => {
-    setAllBlocks(blocks);
-  }, []);
-
   return (
     <div className="app">
-      <h1>Reditor</h1>
-      <p>A Notion-like editor built with React and Tiptap</p>
+      <div style={{ padding: '40px 20px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '8px' }}>
+            Reditor
+          </h1>
+          <p style={{ color: '#666', fontSize: '1.1rem' }}>
+            基于 TipTap + ProseMirror 的富文本编辑器
+          </p>
+        </div>
 
-      {/* 调试信息：显示所有块 */}
-      <div
-        style={{
-          marginBottom: "20px",
-          padding: "10px",
-          backgroundColor: "#f5f5f5",
-          borderRadius: "4px",
-          fontSize: "14px",
-        }}
-      >
-        <strong>多块编辑器状态:</strong>
-        <div>总块数: {allBlocks.length}</div>
-        <div>
-          块内容预览:{" "}
-          {allBlocks
-            .map((b, i) => `${i + 1}. "${b.content.slice(0, 15)}..."`)
-            .join(" | ")}
+        <SimpleEditor />
+
+        <div style={{
+          marginTop: '40px',
+          textAlign: 'center',
+          fontSize: '14px',
+          color: '#888'
+        }}>
+          💡 尝试使用快捷键：<kbd>Cmd+B</kbd> 加粗，<kbd>Cmd+I</kbd> 斜体，<kbd># + 空格</kbd> 标题
         </div>
       </div>
-
-      <MultiBlockEditor onBlocksChange={handleBlocksChange} />
-
-      <p style={{ marginTop: "20px", fontSize: "14px", color: "#666" }}>
-        💡 试试输入文本！按 <kbd>Enter</kbd> 创建新块，在空块中按{" "}
-        <kbd>Backspace</kbd> 删除块。
-      </p>
     </div>
   );
 }
